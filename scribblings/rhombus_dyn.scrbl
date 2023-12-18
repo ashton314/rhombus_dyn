@@ -1,9 +1,8 @@
 #lang scribble/manual
-@require[@for-label[rhombus_dyn
-                    racket/base]]
+@require[@for-label[racket/base]]
 
 @title{rhombus_dyn}
-@author{ashton}
+@author{Ashton Wiersdorf}
 
 @defmodule[rhombus_dyn]
 
