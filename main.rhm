@@ -1,0 +1,132 @@
+#lang rhombus/static
+
+import:
+  rhombus/meta open
+
+export:
+  Dyn
+  maybe_dyn_block
+  dyn_idx_serial
+  dyn_append
+  dyn_with
+  stat_inspector
+  rename:
+    dyn_app as #%call
+    dyn_idx as #%index
+    dyn_append_infix as ++
+    dyn_with_infix as with
+
+meta:
+  syntax_class DynStx
+  | '$(x :: Term)': match_when:
+                      def maybe_key = statinfo_meta.lookup(x, statinfo_meta.dot_provider_key)
+                      if maybe_key
+                      | Syntax.to_source_string(maybe_key) == "dyn_dot_provider"
+                      | #false
+
+annot.macro 'Dyn':
+  annot_meta.pack_predicate('fun (x): #true',
+                            '(($(statinfo_meta.dot_provider_key), dyn_dot_provider),
+                              ($(statinfo_meta.sequence_constructor_key), dyn_seq))')
+
+dot.macro 'dyn_dot_provider $left . $right':
+  'block:
+     use_dynamic                        // TODO: this allows too much, as $left and $right could be *any* expression
+     match $left
+     | val: val . $right
+     | ~else: error("Was expecting a dynamic type here")'
+
+expr.macro 'stat_inspector $thing':
+  '$thing'
+
+expr.macro 'dyn_seq($expr)':
+  'block:
+     use_dynamic
+     $expr'
+
+expr.macro 'maybe_dyn_block $thing:
+              $block':
+  def thing = statinfo_meta.lookup(thing, statinfo_meta.dot_provider_key)
+  // FIXME: this is dumpy
+  if thing && Syntax.to_source_string(thing) == "dyn_dot_provider"
+  | 'block:
+       use_dynamic
+       $block'
+  | 'block:
+       $block'
+
+expr.macro '$func dyn_app ($args, ...)':
+  def maybe_key = statinfo_meta.lookup(func, statinfo_meta.dot_provider_key)
+  if maybe_key && Syntax.to_source_string(maybe_key) == "dyn_dot_provider"
+  | def [temps, ...] = [Syntax.make_temp_id(args), ...]
+    'block:
+       def $temps = $args; ...
+       block:
+         use_dynamic
+         $func #%call ($temps, ...)'
+  | '$func #%call ($args, ...)'
+
+expr.macro
+| '$thing dyn_idx [$idx] $assn_op $rhs_expr':
+    '$thing #%index [$idx] $assn_op $rhs_expr'
+| '$thing dyn_idx [$idx]':
+    def maybe_key = statinfo_meta.lookup(thing, statinfo_meta.dot_provider_key)
+    if maybe_key && Syntax.to_source_string(maybe_key) == "dyn_dot_provider"
+    | def tmp = Syntax.make_temp_id(idx)
+      'block:
+         def $tmp = $idx
+         block:
+           use_dynamic
+           $thing #%index [$tmp]'
+    | '$thing #%index [$idx]'
+
+expr.macro
+| 'dyn_idx_serial $(thing :: DynStx) [$idx]':
+    def tmp = Syntax.make_temp_id(idx)
+    'block:
+       def $tmp = $idx
+       block:
+         use_dynamic
+         $thing #%index [$tmp]'
+| 'dyn_idx_serial $thing [$idx]':
+    '$thing #%index [$idx]'
+
+expr.macro '$thing1 dyn_append_infix $thing2':
+  'dyn_append $thing1 $thing2'
+
+expr.macro
+| 'dyn_append $(thing1 :: DynStx) $(thing2 :: DynStx)':
+    'block:
+       use_dynamic
+       $thing1 ++ $thing2'
+| 'dyn_append $(thing1 :: DynStx) $thing2':     // Warning: out-of-order evaluation?
+    def tmp = Syntax.make_temp_id(thing2)
+    'block:
+       def $tmp = $thing2
+       block:
+         use_dynamic
+         $thing1 ++ $tmp'
+| 'dyn_append $thing1 $(thing2 :: DynStx)':
+    def tmp = Syntax.make_temp_id(thing1)
+    'block:
+       def $tmp = $thing1
+       block:
+         use_dynamic
+         $tmp ++ $thing2'
+| 'dyn_append $thing1 $thing2':
+    '$thing1 ++ $thing2'
+
+expr.macro '$thing1 dyn_with_infix ($(var :: Identifier) = $val, ...)':
+  'dyn_with $thing1 ($var = $val, ...)'
+
+expr.macro
+| 'dyn_with $(thing1 :: DynStx) ($(var :: Identifier) = $val, ...)':
+    def [temps, ...] = [Syntax.make_temp_id(var), ...]
+    'block:
+       def $temps = $val; ...
+       block:
+         use_dynamic
+         $thing1 with ($var = $temps, ...)'
+| 'dyn_with $thing1 ($(var :: Identifier) = $val, ...)':
+    '$thing1 with ($var = $val, ...)'
+

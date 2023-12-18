@@ -1,0 +1,100 @@
+#lang rhombus/static
+
+import:
+  file("../main.rhm") open
+
+macro 'check_raises($msg):
+         $block':
+  'check:
+     ~eval
+     use_static
+     $block
+     ~raises $msg'
+
+macro 'check_dyn:
+         $block':
+  'check:
+     ~eval
+     use_static
+     import: file("../main.rhm") open
+     $block
+     ~completes'
+
+/// Dot provider
+
+check_raises("length: no such field or method (based on static information)"):
+  fun missing_specialization(x):
+    x.length()
+
+check_dyn:
+  fun dyn_specialization(x :: Dyn):
+    x.length()
+
+/// [] #%index
+
+check_raises("[]: specialization not known (based on static information)"):
+  fun missing_idx(thing):
+    thing[42]
+
+check_dyn:
+  fun dyn_idx(thing :: Dyn):
+    thing[42]
+
+/// ++ append
+
+check_raises("++: specialization not known (based on static information)"):
+  fun missing_append(thing1, thing2):
+    thing1 ++ thing2
+
+check_dyn:
+  fun missing_append1(thing1, thing2 :: Dyn):
+    thing1 ++ thing2
+  fun missing_append2(thing1 :: Dyn, thing2):
+    thing1 ++ thing2
+  fun missing_append3(thing1 :: Dyn, thing2 :: Dyn):
+    thing1 ++ thing2
+
+/// () #%call
+
+// huh… I'm having difficulty triggering this one
+
+check_raises("wrong number of arguments in function call (based on static information)"):
+  fun one_arg(x :: Int):
+    x + 42
+  def one_alias  = one_arg
+  fun one_thunk(): one_alias(1, 2)
+
+check_dyn:
+  fun one_arg(x :: Int):
+    x + 42
+  def one_alias :: Dyn = one_arg
+  fun one_thunk(): one_alias(1, 2)
+
+  // fun call_it(f :: Function.of_arity(1)):
+  //   f(2, 3)
+
+/// with
+
+check_raises("with: no such reconstructor argument in class"):
+  class Posn(x :: Int, y :: Int)
+  fun blow_up(thingy :: Posn):
+    thingy with (z = 42)
+
+check_dyn:
+  class Posn(x :: Int, y :: Int)
+  fun blow_up(thingy :: Dyn):
+    thingy with (z = 42)
+
+/// for/each
+
+check_raises("for: no specific iteration implementation available (based on static information)"):
+  fun loopy(should_be_lst):
+    for:
+      each v: should_be_lst
+      println("You got" +& v)
+
+check_dyn:
+  fun loopy(should_be_lst :: Dyn):
+    for:
+      each v: should_be_lst
+      println("You got" +& v)
