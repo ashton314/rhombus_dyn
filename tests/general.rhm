@@ -30,6 +30,38 @@ check_dyn:
   fun dyn_specialization(x :: Dyn):
     x.length()
 
+check_raises("x_plus: no such field or method (based on static information)"):
+  class Foo(x):
+    method x_plus(n):
+      x + n
+
+  fun yadda(f, n):
+    f.x_plus(n)
+
+check_dyn:
+  class Foo(x):
+    method x_plus(n):
+      x + n
+
+  fun yadda(f :: Dyn, n):
+    f.x_plus(n)
+
+  yadda(Foo(5), 6)
+
+check_dyn:
+  class Foo(x):
+    method x_plus(n):
+      x + n
+
+  fun two_foos():
+    [Foo(1), Foo(2)]
+
+  fun yadda():
+    def [f1 :: Dyn, f2] = two_foos()
+    '$(f1.x_plus(42))'
+
+  yadda()
+
 /// [] #%index
 
 check_raises("[]: specialization not known (based on static information)"):

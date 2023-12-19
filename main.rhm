@@ -47,7 +47,7 @@ expr.macro 'dyn_seq($expr)':
 expr.macro 'maybe_dyn_block $thing:
               $block':
   def thing = statinfo_meta.lookup(thing, statinfo_meta.dot_provider_key)
-  // FIXME: this is dumpy
+  // FIXME: this is a dumpy check
   if thing && Syntax.to_source_string(thing) == "dyn_dot_provider"
   | 'block:
        use_dynamic
@@ -69,6 +69,7 @@ expr.macro '$func dyn_app ($args, ...)':
 
 expr.macro
 | '$thing dyn_idx [$idx] $assn_op $rhs_expr':
+    ~stronger_than: ~other
     '$thing #%index [$idx] $assn_op $rhs_expr'
 | '$thing dyn_idx [$idx]':
     def maybe_key = statinfo_meta.lookup(thing, statinfo_meta.dot_provider_key)
