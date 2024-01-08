@@ -30,11 +30,9 @@ annot.macro 'Dyn':
                               ($(statinfo_meta.sequence_constructor_key), dyn_seq))')
 
 dot.macro 'dyn_dot_provider $left . $right':
-  'block:
-     use_dynamic                        // TODO: this allows too much, as $left and $right could be *any* expression
-     match $left
-     | val: val . $right
-     | ~else: error("Was expecting a dynamic type here")'
+  '(block:
+      use_dynamic
+      $left) . $right'
 
 expr.macro 'stat_inspector $thing':
   '$thing'
@@ -66,6 +64,9 @@ expr.macro '$func dyn_app ($args, ...)':
          use_dynamic
          $func #%call ($temps, ...)'
   | '$func #%call ($args, ...)'
+
+repet.macro '$func dyn_app ($args, ...)':
+  repet_meta.pack_list('(dyn_app, n, [$args, ...], 1, 0, (), #false)')
 
 expr.macro
 | '$thing dyn_idx [$idx] $assn_op $rhs_expr':
