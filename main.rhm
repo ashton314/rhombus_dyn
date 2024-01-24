@@ -65,24 +65,76 @@ expr.macro '$func dyn_app ($args, ...)':
          $func #%call ($temps, ...)'
   | '$func #%call ($args, ...)'
 
-repet.macro '$func dyn_app ($(args :: repet_meta.Parsed))':
+// repet.macro '$func dyn_app ($(args :: repet_meta.Parsed))':
+//   ~op_stx self
+//   println("func: " +& func.to_source_string() +& "\nargs: " +& args.to_source_string())
+//   def '($func_orig, $func_name, $func_expr, $func_depth, $func_use_depth, $func_statinfos, $func_is_immed)':
+//     repet_meta.unpack_list(func)
+//   def '($orig, $name, $expr, $depth, $use_depth, $statinfos, $is_immed)':
+//     repet_meta.unpack_list(args)
+//   unless func_depth.unwrap() == 0 && depth.unwrap() == 1
+//   | error("only handle argument repetitions right now")
+//   def (pred, si):               // ← just a way to grab the static info we need?
+//     annot_meta.unpack_predicate(match 'List' | '$(p :: annot_meta.Parsed)': p)
+//   repet_meta.pack_list('($self(),
+//                          $name,
+//                          for PairList:
+//                            each:
+//                              elem: ($expr) :~ PairList
+//                            $func_expr dyn_app (elem),
+//                          $depth,
+//                          $use_depth,
+//                          $si,
+//                          #false)')
+
+repet.macro '$func dyn_app ($(args :: repet_meta.Parsed), ...)':
   ~op_stx self
+  println("here")
   def '($func_orig, $func_name, $func_expr, $func_depth, $func_use_depth, $func_statinfos, $func_is_immed)':
     repet_meta.unpack_list(func)
-  def '($orig, $name, $expr, $depth, $use_depth, $statinfos, $is_immed)':
-    repet_meta.unpack_list(args)
-  unless func_depth.unwrap() == 0 && depth.unwrap() == 1
-  | error("only handle argument repetitions right now")
-  def (pred, si):               // ← just a way to grab the static info we need?
+  def ['($orig, $name, $expr, $depth, $use_depth, $statinfos, $is_immed)', ...]:
+    [repet_meta.unpack_list(args), ...]
+
+  println("expr: " +& [expr, ...])
+  List.map(['($orig, $name, $expr, $depth, $use_depth, $statinfos, $is_immed)', ...], println)
+
+  unless func_depth.unwrap() == 0 && for all (d: [depth.unwrap(), ...]): d == 1 || d == 0
+  | error("only handle argument repetitions and constants right now")
+
+  def args_depth_set = {depth.unwrap(), ...}
+  unless args_depth_set.length() == 0 || args_depth_set.length() == 1
+  | error("don't know how to handle multiple use depths in arguments " +& args_depth_set)
+  def args_this_depth = if args_depth_set.length() == 0 | 0 | [depth, ...][0]
+
+  println("got depth: " +& args_this_depth)
+
+  // def depth_set = {depth.unwrap(), ...}
+  // unless depth_set.length() == 0 || depth_set.length() == 1
+  // | error("don't know how to handle multiple use depths in arguments " +& depth_set)
+  // def this_depth = if depth_set.length() == 0 | 0 | [depth, ...][0]
+
+  def (pred, si):
     annot_meta.unpack_predicate(match 'List' | '$(p :: annot_meta.Parsed)': p)
-  repet_meta.pack_list('($self(),
-                         $name,
+
+  def [temps, ...] = [Syntax.make_temp_id(expr), ...]
+
+                         // for PairList:
+                         //   each:
+                         //     $temps: $expr :~ PairList;
+                         //     ...
+                         //   42,
+                           // $func_expr #%call ($temps, ...),
+
+
+  repet_meta.pack_list('($self,
+                         $func_name,
                          for PairList:
                            each:
-                             elem: ($expr) :~ PairList
-                           $func_expr dyn_app (elem),
-                         $depth,
-                         $use_depth,
+                             $temps: $expr :~ PairList
+                             ...
+                           $func_expr dyn_app ($temps, ...),
+                         2,     // can hardcode I think... we check that the args depth is 1 above
+                         $args_this_depth,
                          $si,
                          #false)')
 
