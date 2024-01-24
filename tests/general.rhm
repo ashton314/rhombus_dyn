@@ -130,3 +130,13 @@ check_dyn:
     for:
       each v: should_be_lst
       println("You got" +& v)
+
+/// Repetition macros
+
+check_dyn:
+  block:
+    fun foo(x :: Dyn) :: Dyn:
+      x + 1
+
+    def [xs, ...] = [1, 2, 3]
+    [foo(xs), ...]

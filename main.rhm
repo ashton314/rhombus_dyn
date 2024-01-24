@@ -65,8 +65,26 @@ expr.macro '$func dyn_app ($args, ...)':
          $func #%call ($temps, ...)'
   | '$func #%call ($args, ...)'
 
-repet.macro '$func dyn_app ($args, ...)':
-  repet_meta.pack_list('(dyn_app, n, [$args, ...], 1, 0, (), #false)')
+repet.macro '$func dyn_app ($(args :: repet_meta.Parsed))':
+  ~op_stx self
+  def '($func_orig, $func_name, $func_expr, $func_depth, $func_use_depth, $func_statinfos, $func_is_immed)':
+    repet_meta.unpack_list(func)
+  def '($orig, $name, $expr, $depth, $use_depth, $statinfos, $is_immed)':
+    repet_meta.unpack_list(args)
+  unless func_depth.unwrap() == 0 && depth.unwrap() == 1
+  | error("only handle argument repetitions right now")
+  def (pred, si):               // ← just a way to grab the static info we need?
+    annot_meta.unpack_predicate(match 'List' | '$(p :: annot_meta.Parsed)': p)
+  repet_meta.pack_list('($self(),
+                         $name,
+                         for PairList:
+                           each:
+                             elem: ($expr) :~ PairList
+                           $func_expr dyn_app (elem),
+                         $depth,
+                         $use_depth,
+                         $si,
+                         #false)')
 
 expr.macro
 | '$thing dyn_idx [$idx] $assn_op $rhs_expr':
