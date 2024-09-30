@@ -102,7 +102,7 @@ repet.macro '$func dyn_app ($(args :: repet_meta.Parsed), ...)':
                                $repet_temps: $repet_exprs :~ PairList
                                ...
                              $func_expr dyn_app ($all_temps, ...),
-                         2,     // can hardcode I think... we check that the args depth is 1 above
+                         2,     // can hardcode I think... we check that the args depth is 1 above.
                          $max_depth,
                          $si,
                          #false)')
