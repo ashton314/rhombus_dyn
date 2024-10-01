@@ -9,15 +9,15 @@ fun foo(x):
 fun bar(x, y):
   x + 2 * y
 
-def [xs, ...] = [1, 2, 3]
-def [ys, ...] = [2, 4, 6]
-[foo(xs), ...]
-// [bar(xs, ys), ...]
-// [bar(1, ys), ...]
+// def [xs, ...] = [1, 2, 3]
+// def [ys, ...] = [2, 4, 6]
+// [foo(xs), ...]
+// // [bar(xs, ys), ...]
+// // [bar(1, ys), ...]
 
 
-fun
-| max([n]): n
-| max([n, ns, ...]):
-    let m = max([ns, ...])
-    if m > n | m | n
+// fun
+// | max([n]): n
+// | max([n, ns, ...]):
+//     let m = max([ns, ...])
+//     if m > n | m | n

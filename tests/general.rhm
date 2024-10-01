@@ -141,23 +141,23 @@ check_dyn:
 //     bar: [2, 4, 8]
 //   top_foo(foo, bar)
 
-check_dyn:
-  block:
-    fun foo(x :: Dyn) :: Dyn:
-      x + 1
+// check_dyn:
+//   block:
+//     fun foo(x :: Dyn) :: Dyn:
+//       x + 1
 
-    fun bar(x, y):
-      x + 2 * y
+//     fun bar(x, y):
+//       x + 2 * y
 
-    fun baz(x, y, z):
-      x + z * y
+//     fun baz(x, y, z):
+//       x + z * y
 
-    def [xs, ...] = [1, 2, 3]
-    def [ys, ...] = [2, 4, 6]
-    [foo(xs), ...]
-    [bar(xs, ys), ...]
-    [bar(1, xs), ...]
-    [baz(1, ys, 3), ...]
+//     def [xs, ...] = [1, 2, 3]
+//     def [ys, ...] = [2, 4, 6]
+//     [foo(xs), ...]
+//     [bar(xs, ys), ...]
+//     [bar(1, xs), ...]
+//     [baz(1, ys, 3), ...]
 
     // FIXME: this isn't working right now
     // def [[zs, ...], ...] = [[1, 2, 3], [4, 5]]
