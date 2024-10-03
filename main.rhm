@@ -17,16 +17,17 @@ export:
     dyn_with_infix as with
 
 meta:
-  // Matches syntax annotates with the `Dyn` annotation
+  // Function to check if a bit of syntax has been given the `Dyn` annotation
+  fun has_dyn_dot_provider(stx):
+    def maybe_key = statinfo_meta.lookup(stx, statinfo_meta.dot_provider_key)
+    maybe_key && Syntax.to_source_string(maybe_key) == "dyn_dot_provider"
+
+  // Syntax class to check has_dyn_dot_provider
   syntax_class DynStx
-  | '$(x :: Term)': match_when:
-                      def maybe_key = statinfo_meta.lookup(x, statinfo_meta.dot_provider_key)
-                      if maybe_key
-                      | Syntax.to_source_string(maybe_key) == "dyn_dot_provider"
-                      | #false
+  | '$(x :: Term)': match_when: has_dyn_dot_provider(x)
 
 annot.macro 'Dyn':
-  annot_meta.pack_predicate('fun (x): #true',
+  annot_meta.pack_predicate('fun (x): #true', // anything can flow to Dyn
                             '(($(statinfo_meta.dot_provider_key), dyn_dot_provider),
                               ($(statinfo_meta.sequence_constructor_key), dyn_seq))')
 
@@ -45,8 +46,7 @@ expr.macro 'dyn_seq($expr)':
 
 expr.macro 'maybe_dyn_block $thing:
               $block':
-  def thing = statinfo_meta.lookup(thing, statinfo_meta.dot_provider_key)
-  if thing && Syntax.to_source_string(thing) == "dyn_dot_provider"
+  if has_dyn_dot_provider(thing)
   | 'block:
        use_dynamic
        $block'
@@ -55,8 +55,7 @@ expr.macro 'maybe_dyn_block $thing:
 
 expr.macro '$func dyn_app ($args, ...)':
   ~stronger_than: ~other
-  def maybe_key = statinfo_meta.lookup(func, statinfo_meta.dot_provider_key)
-  if maybe_key && Syntax.to_source_string(maybe_key) == "dyn_dot_provider"
+  if has_dyn_dot_provider(func)
   | def [temps, ...] = [Syntax.make_temp_id(args), ...]
     'block:
        def $temps = $args; ...
@@ -112,24 +111,21 @@ expr.macro
     ~stronger_than: ~other
     '$thing #%index [$idx] $assn_op $rhs_expr'
 | '$thing dyn_idx [$idx]':
-    def maybe_key = statinfo_meta.lookup(thing, statinfo_meta.dot_provider_key)
-    if maybe_key && Syntax.to_source_string(maybe_key) == "dyn_dot_provider"
-    | def tmp = Syntax.make_temp_id(idx)
-      'block:
-         def $tmp = $idx
+    if has_dyn_dot_provider(thing)
+    | 'block:
+         def tmp = $idx
          block:
            use_dynamic
-           $thing #%index [$tmp]'
+           $thing #%index [tmp]'
     | '$thing #%index [$idx]'
 
 expr.macro
 | 'dyn_idx_serial $(thing :: DynStx) [$idx]':
-    def tmp = Syntax.make_temp_id(idx)
     'block:
-       def $tmp = $idx
+       def tmp = $idx
        block:
          use_dynamic
-         $thing #%index [$tmp]'
+         $thing #%index [tmp]'
 | 'dyn_idx_serial $thing [$idx]':
     '$thing #%index [$idx]'
 
@@ -142,19 +138,17 @@ expr.macro
        use_dynamic
        $thing1 ++ $thing2'
 | 'dyn_append $(thing1 :: DynStx) $thing2':     // Warning: out-of-order evaluation?
-    def tmp = Syntax.make_temp_id(thing2)
     'block:
-       def $tmp = $thing2
+       def tmp = $thing2
        block:
          use_dynamic
-         $thing1 ++ $tmp'
+         $thing1 ++ tmp'
 | 'dyn_append $thing1 $(thing2 :: DynStx)':
-    def tmp = Syntax.make_temp_id(thing1)
     'block:
-       def $tmp = $thing1
+       def tmp = $thing1
        block:
          use_dynamic
-         $tmp ++ $thing2'
+         tmp ++ $thing2'
 | 'dyn_append $thing1 $thing2':
     '$thing1 ++ $thing2'
 
